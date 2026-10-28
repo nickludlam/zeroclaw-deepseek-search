@@ -1,0 +1,8 @@
+/target
+*.wasm
+/dist/
+# Local deployment archives and throwaway verification config dirs.
+/*.tar.gz
+/.verify*/
+.env
+.DS_Store

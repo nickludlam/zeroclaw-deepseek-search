@@ -1,0 +1,78 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-wasip2
+
+      - name: Verify the tag matches the package version
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n1)
+          if [[ "$GITHUB_REF_NAME" != "v$version" ]]; then
+            echo "::error::tag $GITHUB_REF_NAME does not match package version $version"
+            exit 1
+          fi
+
+      - name: Version parity
+        run: scripts/check-version.sh
+
+      - name: Host tests
+        run: cargo test --locked
+
+      - name: Package
+        run: scripts/package.sh
+
+      - name: Generate registry entry
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n1)
+          digest=$(cut -d' ' -f1 "dist/deepseek-search-$version.zip.sha256")
+          VERSION="$version" DIGEST="$digest" python3 - <<'PY'
+          import json, os
+
+          version = os.environ["VERSION"]
+          repo = os.environ["GITHUB_REPOSITORY"]
+          entry = {
+              "name": "deepseek-search",
+              "version": version,
+              "description": "Web search through the DeepSeek Search API",
+              "author": os.environ["GITHUB_REPOSITORY_OWNER"],
+              "capabilities": ["tool"],
+              "url": (
+                  f"https://github.com/{repo}/releases/download/"
+                  f"v{version}/deepseek-search-{version}.zip"
+              ),
+              "sha256": os.environ["DIGEST"],
+          }
+          with open("dist/registry-entry.json", "w") as fh:
+              json.dump({"plugins": [entry]}, fh, indent=2)
+              fh.write("\n")
+          PY
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          version=$(sed -n 's/^version = "\([^"]*\)"$/\1/p' Cargo.toml | head -n1)
+          gh release create "$GITHUB_REF_NAME" \
+            "dist/deepseek-search-$version.zip" \
+            "dist/deepseek-search-$version.zip.sha256" \
+            "dist/registry-entry.json" \
+            --title "deepseek-search $version" \
+            --generate-notes \
+            --verify-tag

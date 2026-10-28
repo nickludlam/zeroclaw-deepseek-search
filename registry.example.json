@@ -1,0 +1,13 @@
+{
+  "plugins": [
+    {
+      "name": "deepseek-search",
+      "version": "0.1.0",
+      "description": "Web search through the DeepSeek Search API",
+      "author": "nickludlam",
+      "capabilities": ["tool"],
+      "url": "https://github.com/nickludlam/zeroclaw-deepseek-search/releases/download/v0.1.0/deepseek-search-0.1.0.zip",
+      "sha256": "<sha256 of deepseek-search-0.1.0.zip>"
+    }
+  ]
+}

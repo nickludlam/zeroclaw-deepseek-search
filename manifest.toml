@@ -1,0 +1,42 @@
+# On-disk manifest for the DeepSeek Search tool plugin.
+#
+# `name` and `version` must match what the component's `plugin-info` export
+# reports. `wasm_path` is relative to this directory and names the component
+# produced by `cargo build --release --target wasm32-wasip2`.
+name = "deepseek-search"
+version = "0.1.0"
+description = "Web search through the DeepSeek Search API (DeepSeek's own search engine)."
+wasm_path = "deepseek_search.wasm"
+capabilities = ["tool"]
+permissions = ["http_client", "config_read"]
+
+# Destinations this plugin needs. A declaration grants nothing by itself: the
+# operator's `plugins.entries.<instance>.egress_hosts` is what the host
+# enforces, and `zeroclaw plugin install` seeds it from this list when it
+# creates the plugin's row.
+[egress]
+hosts = ["api.deepseek.com"]
+
+# Typed operator config. `api_key` is required and marked secret, so it is
+# withheld from `__config` and readable only through `secrets.get` during an
+# authorized `execute`.
+[config_schema]
+"$schema" = "https://json-schema.org/draft/2020-12/schema"
+type = "object"
+additionalProperties = false
+required = ["api_key"]
+
+[config_schema.properties.api_key]
+type = "string"
+minLength = 1
+x-secret = true
+
+# Default result count when the model does not pass `count`.
+[config_schema.properties.count]
+type = "integer"
+minimum = 1
+maximum = 50
+
+# Default for `need_content` when the model does not pass it.
+[config_schema.properties.need_content]
+type = "boolean"
