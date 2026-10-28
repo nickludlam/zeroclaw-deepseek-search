@@ -23,7 +23,7 @@ serde_json = "1"
 # Blocking `wasi:http` for the component; omitted on the host so `cargo test`
 # never needs a wasm toolchain.
 waki = "0.5.1"
-wit-bindgen = "0.51"
+wit-bindgen = "0.63"
 
 [profile.release]
 opt-level = "s"
